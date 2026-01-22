@@ -43,6 +43,7 @@ export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
+    const [uploadMode, setUploadMode] = useState<"url" | "file">("url");
 
     const createBlog = useCreateBlog();
 
@@ -246,41 +247,107 @@ export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
                     </div>
 
                     {/* Cover Image */}
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                            <ImageIcon className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
-                            <Label htmlFor="coverImage">Cover Image URL *</Label>
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <Label>Cover Image *</Label>
+                            <div className="flex bg-[hsl(var(--muted))] p-1 rounded-lg">
+                                <button
+                                    type="button"
+                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${uploadMode === "url"
+                                        ? "bg-[hsl(var(--background))] shadow text-[hsl(var(--foreground))]"
+                                        : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                                        }`}
+                                    onClick={() => setUploadMode("url")}
+                                >
+                                    URL
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${uploadMode === "file"
+                                        ? "bg-[hsl(var(--background))] shadow text-[hsl(var(--foreground))]"
+                                        : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                                        }`}
+                                    onClick={() => setUploadMode("file")}
+                                >
+                                    Upload
+                                </button>
+                            </div>
                         </div>
-                        <Input
-                            id="coverImage"
-                            placeholder="https://images.pexels.com/photos/..."
-                            value={formData.coverImage}
-                            onChange={(e) => handleInputChange("coverImage", e.target.value)}
-                            className={errors.coverImage ? "border-red-500" : ""}
-                        />
+
+                        {uploadMode === "url" ? (
+                            <Input
+                                id="coverImage"
+                                placeholder="https://images.pexels.com/photos/..."
+                                value={formData.coverImage.startsWith("data:") ? "" : formData.coverImage}
+                                onChange={(e) => handleInputChange("coverImage", e.target.value)}
+                                className={errors.coverImage ? "border-red-500" : ""}
+                            />
+                        ) : (
+                            <div className="flex items-center justify-center w-full">
+                                <label
+                                    htmlFor="file-upload"
+                                    className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${errors.coverImage
+                                        ? "border-red-500 bg-red-500/5 hover:bg-red-500/10"
+                                        : "border-[hsl(var(--border))] bg-[hsl(var(--muted))]/30 hover:bg-[hsl(var(--muted))]/50"
+                                        }`}
+                                >
+                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <ImageIcon className="w-8 h-8 mb-2 text-[hsl(var(--muted-foreground))]" />
+                                        <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                                            <span className="font-semibold text-[hsl(var(--primary))]">Click to upload</span> or drag and drop
+                                        </p>
+                                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                                            PNG, JPG or GIF (max 2MB)
+                                        </p>
+                                    </div>
+                                    <input
+                                        id="file-upload"
+                                        type="file"
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                if (file.size > 2 * 1024 * 1024) {
+                                                    toast.error("Image size must be less than 2MB");
+                                                    return;
+                                                }
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    handleInputChange("coverImage", reader.result as string);
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                        )}
+
                         {errors.coverImage && (
                             <p className="text-xs text-red-500 flex items-center gap-1">
                                 <X className="h-3 w-3" />
                                 {errors.coverImage}
                             </p>
                         )}
+
                         {formData.coverImage && !errors.coverImage && (
-                            <div className="mt-2 rounded-lg overflow-hidden h-32 bg-[hsl(var(--muted))] relative">
-                                {!imageLoaded && !imageError && (
-                                    <div className="absolute inset-0 animate-shimmer" />
-                                )}
+                            <div className="mt-2 rounded-lg overflow-hidden h-40 bg-[hsl(var(--muted))] relative group border border-[hsl(var(--border))]">
                                 <img
                                     src={formData.coverImage}
                                     alt="Preview"
-                                    className={`w-full h-full object-cover transition-opacity ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+                                    className="w-full h-full object-cover"
                                     onLoad={() => setImageLoaded(true)}
                                     onError={() => setImageError(true)}
                                 />
-                                {imageError && (
-                                    <div className="absolute inset-0 flex items-center justify-center text-[hsl(var(--muted-foreground))]">
-                                        <ImageIcon className="h-8 w-8" />
-                                    </div>
-                                )}
+                                <button
+                                    type="button"
+                                    className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                                    onClick={() => handleInputChange("coverImage", "")}
+                                    title="Remove image"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
                             </div>
                         )}
                     </div>
