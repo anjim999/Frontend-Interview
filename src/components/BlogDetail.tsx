@@ -1,14 +1,17 @@
-import { useBlog } from "@/hooks/useBlogs";
+import { useBlog, useDeleteBlog } from "@/hooks/useBlogs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BlogDetailSkeleton } from "@/components/BlogSkeleton";
 import { formatDate, getReadingTime } from "@/lib/utils";
-import { Calendar, Clock, AlertCircle, Share2, BookOpen, ArrowUp } from "lucide-react";
+import { Calendar, Clock, AlertCircle, Share2, BookOpen, ArrowUp, Trash2, PenLine } from "lucide-react";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import { BlogForm } from "./BlogForm";
+import { ConfirmationModal } from "./ConfirmationModal";
 
 interface BlogDetailProps {
     blogId: string | null;
+    onDelete?: () => void;
 }
 
 // Color mapping for categories
@@ -21,10 +24,13 @@ const categoryColors: Record<string, string> = {
     LIFESTYLE: "bg-pink-500/10 text-pink-600 border-pink-500/20",
 };
 
-export function BlogDetail({ blogId }: BlogDetailProps) {
+export function BlogDetail({ blogId, onDelete }: BlogDetailProps) {
     const { data: blog, isLoading, isError, error } = useBlog(blogId);
+    const deleteBlog = useDeleteBlog();
     const [imageLoaded, setImageLoaded] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     // Reset image loaded state when blog changes
     useEffect(() => {
@@ -47,6 +53,19 @@ export function BlogDetail({ blogId }: BlogDetailProps) {
     const scrollToTop = () => {
         const container = document.getElementById("blog-detail-container");
         container?.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const handleDelete = async () => {
+        if (!blogId) return;
+
+        try {
+            await deleteBlog.mutateAsync(blogId);
+            toast.success("Blog deleted successfully");
+            setIsDeleteOpen(false);
+            if (onDelete) onDelete();
+        } catch (error) {
+            toast.error("Failed to delete blog");
+        }
     };
 
     const handleShare = async () => {
@@ -115,6 +134,24 @@ export function BlogDetail({ blogId }: BlogDetailProps) {
                     >
                         <Share2 className="h-4 w-4 mr-1" />
                         Share
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-0"
+                        onClick={() => setIsEditOpen(true)}
+                    >
+                        <PenLine className="h-4 w-4 mr-1" />
+                        Edit
+                    </Button>
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        className="bg-red-500/80 backdrop-blur-sm hover:bg-red-600/90 text-white border-0"
+                        onClick={() => setIsDeleteOpen(true)}
+                    >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
                     </Button>
                 </div>
 
@@ -238,6 +275,26 @@ export function BlogDetail({ blogId }: BlogDetailProps) {
                     <ArrowUp className="h-5 w-5" />
                 </Button>
             )}
+
+            {/* Edit Modal */}
+            {isEditOpen && blog && (
+                <BlogForm
+                    blog={blog}
+                    onClose={() => setIsEditOpen(false)}
+                    onSuccess={() => {
+                        setIsEditOpen(false);
+                    }}
+                />
+            )}
+
+            <ConfirmationModal
+                isOpen={isDeleteOpen}
+                onClose={() => setIsDeleteOpen(false)}
+                onConfirm={handleDelete}
+                title="Delete Blog Post?"
+                description="Are you sure you want to delete this blog? This action cannot be undone."
+                isLoading={deleteBlog.isPending}
+            />
         </article>
     );
 }

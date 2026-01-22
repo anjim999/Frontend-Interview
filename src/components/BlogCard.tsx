@@ -43,38 +43,40 @@ export function BlogCard({ blog, isSelected, onClick, searchQuery }: BlogCardPro
     return (
         <Card
             className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.01] group ${isSelected
-                    ? "ring-2 ring-[hsl(var(--primary))] shadow-lg border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/5"
-                    : "hover:border-[hsl(var(--primary))]/50"
+                ? "ring-2 ring-[hsl(var(--primary))] shadow-lg border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/5"
+                : "hover:border-[hsl(var(--primary))]/50"
                 }`}
             onClick={onClick}
         >
             <CardHeader className="pb-2 pt-4 px-4">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex gap-1.5 flex-wrap">
-                        {blog.category.slice(0, 2).map((cat) => (
-                            <Badge
-                                key={cat}
-                                variant="outline"
-                                className={`text-[10px] font-medium px-2 py-0 ${categoryColors[cat] || "bg-gray-500/10 text-gray-600 border-gray-500/20"
-                                    }`}
-                            >
-                                {cat}
-                            </Badge>
-                        ))}
-                        {blog.category.length > 2 && (
-                            <Badge variant="outline" className="text-[10px] px-2 py-0">
-                                +{blog.category.length - 2}
-                            </Badge>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-3 text-[10px] text-[hsl(var(--muted-foreground))]">
-                        <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {readingTime}m
+                <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex gap-1.5 flex-wrap">
+                            {blog.category.slice(0, 2).map((cat) => (
+                                <Badge
+                                    key={cat}
+                                    variant="outline"
+                                    className={`text-[10px] font-medium px-2 py-0.5 ${categoryColors[cat] || "bg-gray-500/10 text-gray-600 border-gray-500/20"
+                                        }`}
+                                >
+                                    {cat}
+                                </Badge>
+                            ))}
+                            {blog.category.length > 2 && (
+                                <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                                    +{blog.category.length - 2}
+                                </Badge>
+                            )}
                         </div>
-                        <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {formatDate(blog.date)}
+                        <div className="flex items-center gap-3 text-[10px] text-[hsl(var(--muted-foreground))] shrink-0">
+                            <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {readingTime}m
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(blog.date)}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -88,10 +90,7 @@ export function BlogCard({ blog, isSelected, onClick, searchQuery }: BlogCardPro
                 </p>
             </CardContent>
 
-            {/* Selection indicator */}
-            {isSelected && (
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[hsl(var(--primary))] rounded-l-xl" />
-            )}
+
         </Card>
     );
 }

@@ -13,7 +13,7 @@ import { useBlogs } from "@/hooks/useBlogs";
 import { useDebounce, useLocalStorage, useReadingProgress } from "@/hooks/useAdvanced";
 import { useTheme } from "@/context/ThemeContext";
 import { Plus, PenLine, Sparkles } from "lucide-react";
-import toast from "react-hot-toast";
+// Toast import removed
 import "./index.css";
 
 function App() {
@@ -139,7 +139,7 @@ function App() {
 
   // Handle blog creation success
   const handleBlogCreated = () => {
-    toast.success("Blog created successfully! 🎉");
+    // Toast is handled in BlogForm
   };
 
   return (
@@ -152,7 +152,7 @@ function App() {
       <main className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Panel - Blog List */}
-          <aside className="lg:col-span-5 xl:col-span-4">
+          <aside className="lg:col-span-5 xl:col-span-4 pl-4 md:pl-2">
             <div className="sticky top-20 space-y-4">
               {/* Section Header */}
               <div className="flex items-center justify-between">
@@ -193,7 +193,7 @@ function App() {
               </div>
 
               {/* Blog List - Scrollable */}
-              <div className="max-h-[calc(100vh-380px)] overflow-y-auto pr-2 space-y-3">
+              <div className="max-h-[calc(100vh-380px)] overflow-y-auto space-y-3">
                 <BlogList
                   blogs={filteredBlogs}
                   selectedBlogId={selectedBlogId}
@@ -212,7 +212,10 @@ function App() {
             >
               {selectedBlogId ? (
                 <div className="p-6 animate-fade-in">
-                  <BlogDetail blogId={selectedBlogId} />
+                  <BlogDetail
+                    blogId={selectedBlogId}
+                    onDelete={() => setSelectedBlogId(null)}
+                  />
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">

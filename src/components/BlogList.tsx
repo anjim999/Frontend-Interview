@@ -75,7 +75,7 @@ export function BlogList({ blogs, selectedBlogId, onSelectBlog, searchQuery }: B
     }
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-3 px-2 py-2">
             {blogs.map((blog, index) => (
                 <div
                     key={blog.id}

@@ -1,18 +1,15 @@
 import { useState } from "react";
-import { useCreateBlog } from "@/hooks/useBlogs";
+import { useCreateBlog, useUpdateBlog } from "@/hooks/useBlogs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Loader2, ImageIcon, FileText, Tag } from "lucide-react";
-import type { CreateBlogInput } from "@/types/blog";
+import { X, Plus, Loader2, ImageIcon, FileText, Tag, PenLine } from "lucide-react";
+import type { CreateBlogInput, Blog } from "@/types/blog";
 import toast from "react-hot-toast";
 
-interface BlogFormProps {
-    onClose: () => void;
-    onSuccess: () => void;
-}
+// Duplicate interface removed
 
 const AVAILABLE_CATEGORIES = [
     "FINANCE",
@@ -32,20 +29,29 @@ const categoryColors: Record<string, string> = {
     LIFESTYLE: "bg-pink-500/10 text-pink-600 border-pink-500/20 hover:bg-pink-500/20",
 };
 
-export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
+interface BlogFormProps {
+    onClose: () => void;
+    onSuccess: () => void;
+    blog?: Blog; // Optional blog for editing
+}
+
+// ... imports and constants remain the same ...
+
+export function BlogForm({ onClose, onSuccess, blog }: BlogFormProps) {
     const [formData, setFormData] = useState<CreateBlogInput>({
-        title: "",
-        category: [],
-        description: "",
-        coverImage: "",
-        content: "",
+        title: blog?.title || "",
+        category: blog?.category || [],
+        description: blog?.description || "",
+        coverImage: blog?.coverImage || "",
+        content: blog?.content || "",
     });
+
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const [imageError, setImageError] = useState(false);
     const [uploadMode, setUploadMode] = useState<"url" | "file">("url");
 
     const createBlog = useCreateBlog();
+    const updateBlog = useUpdateBlog();
+    const isEditing = !!blog;
 
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
@@ -67,8 +73,8 @@ export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
         }
 
         if (!formData.coverImage.trim()) {
-            newErrors.coverImage = "Cover image URL is required";
-        } else if (!formData.coverImage.startsWith("http")) {
+            newErrors.coverImage = "Cover image is required";
+        } else if (uploadMode === "url" && !formData.coverImage.startsWith("http")) {
             newErrors.coverImage = "Enter a valid URL starting with http";
         }
 
@@ -91,12 +97,18 @@ export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
         }
 
         try {
-            await createBlog.mutateAsync(formData);
+            if (isEditing && blog) {
+                await updateBlog.mutateAsync({ id: blog.id, data: formData });
+                toast.success("Blog updated successfully! 🎉");
+            } else {
+                await createBlog.mutateAsync(formData);
+                toast.success("Blog created successfully! 🎉");
+            }
             onSuccess();
             onClose();
         } catch (error) {
-            toast.error("Failed to create blog. Please try again.");
-            console.error("Failed to create blog:", error);
+            toast.error(isEditing ? "Failed to update blog" : "Failed to create blog");
+            console.error("Operation failed:", error);
         }
     };
 
@@ -115,8 +127,7 @@ export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
         setErrors((prev) => ({ ...prev, [field]: "" }));
 
         if (field === "coverImage") {
-            setImageLoaded(false);
-            setImageError(false);
+            // Reset image state if needed
         }
     };
 
@@ -144,10 +155,10 @@ export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
                         </div>
                         <div>
                             <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
-                                Create New Blog
+                                {isEditing ? "Edit Blog" : "Create New Blog"}
                             </h2>
                             <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                                Share your knowledge with the community
+                                {isEditing ? "Update your article content" : "Share your knowledge with the community"}
                             </p>
                         </div>
                     </div>
@@ -337,8 +348,6 @@ export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
                                     src={formData.coverImage}
                                     alt="Preview"
                                     className="w-full h-full object-cover"
-                                    onLoad={() => setImageLoaded(true)}
-                                    onError={() => setImageError(true)}
                                 />
                                 <button
                                     type="button"
@@ -381,16 +390,16 @@ export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
                     <Button type="button" variant="outline" onClick={onClose}>
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={createBlog.isPending}>
-                        {createBlog.isPending ? (
+                    <Button onClick={handleSubmit} disabled={createBlog.isPending || updateBlog.isPending}>
+                        {createBlog.isPending || updateBlog.isPending ? (
                             <>
                                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                Creating...
+                                {isEditing ? "Updating..." : "Creating..."}
                             </>
                         ) : (
                             <>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create Blog
+                                {isEditing ? <PenLine className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                                {isEditing ? "Update Blog" : "Create Blog"}
                             </>
                         )}
                     </Button>

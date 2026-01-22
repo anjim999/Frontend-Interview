@@ -39,3 +39,51 @@ export function useCreateBlog() {
         },
     });
 }
+// Hook to update a blog
+export function useUpdateBlog() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, data }: { id: string; data: Partial<import('@/types/blog').Blog> }) => {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+            const response = await fetch(`${API_BASE_URL}/blogs/${id}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to update blog");
+            }
+
+            return response.json();
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: blogKeys.all });
+            queryClient.invalidateQueries({ queryKey: blogKeys.detail(data.id) });
+        },
+    });
+}
+
+// Hook to delete a blog
+export function useDeleteBlog() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+            const response = await fetch(`${API_BASE_URL}/blogs/${id}`, {
+                method: "DELETE",
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to delete blog");
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: blogKeys.all });
+        },
+    });
+}
