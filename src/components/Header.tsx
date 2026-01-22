@@ -1,11 +1,13 @@
 import { BookOpen } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 
 export function Header() {
     return (
         <header className="sticky top-0 z-40 w-full border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]/95 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--background))]/60">
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary))]/70 text-white shadow-lg">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary))]/70 text-white shadow-lg shadow-[hsl(var(--primary))]/25 transition-transform hover:scale-105">
                         <BookOpen className="h-5 w-5" />
                     </div>
                     <div>
@@ -17,8 +19,10 @@ export function Header() {
                         </p>
                     </div>
                 </div>
-                <div className="text-sm text-[hsl(var(--muted-foreground))]">
-                    Empowering CA Professionals
+
+                <div className="flex items-center gap-2">
+                    <KeyboardShortcuts />
+                    <ThemeToggle />
                 </div>
             </div>
         </header>

@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Loader2 } from "lucide-react";
+import { X, Plus, Loader2, ImageIcon, FileText, Tag } from "lucide-react";
 import type { CreateBlogInput } from "@/types/blog";
+import toast from "react-hot-toast";
 
 interface BlogFormProps {
     onClose: () => void;
@@ -22,6 +23,15 @@ const AVAILABLE_CATEGORIES = [
     "LIFESTYLE",
 ];
 
+const categoryColors: Record<string, string> = {
+    FINANCE: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20",
+    TECH: "bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20",
+    CAREER: "bg-purple-500/10 text-purple-600 border-purple-500/20 hover:bg-purple-500/20",
+    EDUCATION: "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/20",
+    REGULATIONS: "bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20",
+    LIFESTYLE: "bg-pink-500/10 text-pink-600 border-pink-500/20 hover:bg-pink-500/20",
+};
+
 export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
     const [formData, setFormData] = useState<CreateBlogInput>({
         title: "",
@@ -31,6 +41,8 @@ export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
         content: "",
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
 
     const createBlog = useCreateBlog();
 
@@ -39,18 +51,30 @@ export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
 
         if (!formData.title.trim()) {
             newErrors.title = "Title is required";
+        } else if (formData.title.length < 5) {
+            newErrors.title = "Title must be at least 5 characters";
         }
+
         if (formData.category.length === 0) {
             newErrors.category = "Select at least one category";
         }
+
         if (!formData.description.trim()) {
             newErrors.description = "Description is required";
+        } else if (formData.description.length < 20) {
+            newErrors.description = "Description must be at least 20 characters";
         }
+
         if (!formData.coverImage.trim()) {
             newErrors.coverImage = "Cover image URL is required";
+        } else if (!formData.coverImage.startsWith("http")) {
+            newErrors.coverImage = "Enter a valid URL starting with http";
         }
+
         if (!formData.content.trim()) {
             newErrors.content = "Content is required";
+        } else if (formData.content.length < 50) {
+            newErrors.content = "Content must be at least 50 characters";
         }
 
         setErrors(newErrors);
@@ -60,13 +84,17 @@ export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            toast.error("Please fix the form errors");
+            return;
+        }
 
         try {
             await createBlog.mutateAsync(formData);
             onSuccess();
             onClose();
         } catch (error) {
+            toast.error("Failed to create blog. Please try again.");
             console.error("Failed to create blog:", error);
         }
     };
@@ -81,162 +109,225 @@ export function BlogForm({ onClose, onSuccess }: BlogFormProps) {
         setErrors((prev) => ({ ...prev, category: "" }));
     };
 
+    const handleInputChange = (field: keyof CreateBlogInput, value: string | string[]) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+
+        if (field === "coverImage") {
+            setImageLoaded(false);
+            setImageError(false);
+        }
+    };
+
+    // Character count helpers
+    const charCount = {
+        title: formData.title.length,
+        description: formData.description.length,
+        content: formData.content.length,
+    };
+
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-[hsl(var(--card))] rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in">
+        <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={onClose}
+        >
+            <div
+                className="bg-[hsl(var(--card))] rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
-                    <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
-                        Create New Blog
-                    </h2>
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-[hsl(var(--primary))]/10">
+                            <FileText className="h-5 w-5 text-[hsl(var(--primary))]" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">
+                                Create New Blog
+                            </h2>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                Share your knowledge with the community
+                            </p>
+                        </div>
+                    </div>
                     <Button variant="ghost" size="icon" onClick={onClose}>
                         <X className="h-5 w-5" />
                     </Button>
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-180px)]">
                     {/* Title */}
                     <div className="space-y-2">
-                        <Label htmlFor="title">Title *</Label>
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="title">Title *</Label>
+                            <span className={`text-xs ${charCount.title < 5 ? "text-red-500" : "text-[hsl(var(--muted-foreground))]"}`}>
+                                {charCount.title}/100
+                            </span>
+                        </div>
                         <Input
                             id="title"
-                            placeholder="Enter blog title"
+                            placeholder="Enter an engaging blog title"
                             value={formData.title}
-                            onChange={(e) => {
-                                setFormData((prev) => ({ ...prev, title: e.target.value }));
-                                setErrors((prev) => ({ ...prev, title: "" }));
-                            }}
-                            className={errors.title ? "border-red-500" : ""}
+                            onChange={(e) => handleInputChange("title", e.target.value)}
+                            className={errors.title ? "border-red-500 focus:ring-red-500" : ""}
+                            maxLength={100}
                         />
                         {errors.title && (
-                            <p className="text-xs text-red-500">{errors.title}</p>
+                            <p className="text-xs text-red-500 flex items-center gap-1">
+                                <X className="h-3 w-3" />
+                                {errors.title}
+                            </p>
                         )}
                     </div>
 
                     {/* Categories */}
                     <div className="space-y-2">
-                        <Label>Categories *</Label>
+                        <div className="flex items-center gap-2">
+                            <Tag className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                            <Label>Categories * <span className="text-xs font-normal text-[hsl(var(--muted-foreground))]">(select up to 3)</span></Label>
+                        </div>
                         <div className="flex flex-wrap gap-2">
-                            {AVAILABLE_CATEGORIES.map((category) => (
-                                <Badge
-                                    key={category}
-                                    variant={formData.category.includes(category) ? "default" : "outline"}
-                                    className={`cursor-pointer transition-all ${formData.category.includes(category)
-                                        ? "bg-[hsl(var(--primary))]"
-                                        : "hover:bg-[hsl(var(--primary))]/10"
-                                        }`}
-                                    onClick={() => toggleCategory(category)}
-                                >
-                                    {formData.category.includes(category) ? (
-                                        <X className="h-3 w-3 mr-1" />
-                                    ) : (
-                                        <Plus className="h-3 w-3 mr-1" />
-                                    )}
-                                    {category}
-                                </Badge>
-                            ))}
+                            {AVAILABLE_CATEGORIES.map((category) => {
+                                const isSelected = formData.category.includes(category);
+                                const isDisabled = !isSelected && formData.category.length >= 3;
+
+                                return (
+                                    <Badge
+                                        key={category}
+                                        variant={isSelected ? "default" : "outline"}
+                                        className={`cursor-pointer transition-all ${isDisabled ? "opacity-40 cursor-not-allowed" : ""
+                                            } ${isSelected
+                                                ? "bg-[hsl(var(--primary))] text-white"
+                                                : categoryColors[category]
+                                            }`}
+                                        onClick={() => !isDisabled && toggleCategory(category)}
+                                    >
+                                        {isSelected ? (
+                                            <X className="h-3 w-3 mr-1" />
+                                        ) : (
+                                            <Plus className="h-3 w-3 mr-1" />
+                                        )}
+                                        {category}
+                                    </Badge>
+                                );
+                            })}
                         </div>
                         {errors.category && (
-                            <p className="text-xs text-red-500">{errors.category}</p>
+                            <p className="text-xs text-red-500 flex items-center gap-1">
+                                <X className="h-3 w-3" />
+                                {errors.category}
+                            </p>
                         )}
                     </div>
 
                     {/* Description */}
                     <div className="space-y-2">
-                        <Label htmlFor="description">Description *</Label>
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="description">Description *</Label>
+                            <span className={`text-xs ${charCount.description < 20 ? "text-red-500" : "text-[hsl(var(--muted-foreground))]"}`}>
+                                {charCount.description}/200
+                            </span>
+                        </div>
                         <Textarea
                             id="description"
-                            placeholder="A brief summary of your blog"
+                            placeholder="Write a brief summary that captures the essence of your blog"
                             value={formData.description}
-                            onChange={(e) => {
-                                setFormData((prev) => ({ ...prev, description: e.target.value }));
-                                setErrors((prev) => ({ ...prev, description: "" }));
-                            }}
-                            className={`min-h-[80px] ${errors.description ? "border-red-500" : ""}`}
+                            onChange={(e) => handleInputChange("description", e.target.value)}
+                            className={`min-h-[80px] resize-none ${errors.description ? "border-red-500" : ""}`}
+                            maxLength={200}
                         />
                         {errors.description && (
-                            <p className="text-xs text-red-500">{errors.description}</p>
+                            <p className="text-xs text-red-500 flex items-center gap-1">
+                                <X className="h-3 w-3" />
+                                {errors.description}
+                            </p>
                         )}
                     </div>
 
                     {/* Cover Image */}
                     <div className="space-y-2">
-                        <Label htmlFor="coverImage">Cover Image URL *</Label>
+                        <div className="flex items-center gap-2">
+                            <ImageIcon className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                            <Label htmlFor="coverImage">Cover Image URL *</Label>
+                        </div>
                         <Input
                             id="coverImage"
-                            placeholder="https://example.com/image.jpg"
+                            placeholder="https://images.pexels.com/photos/..."
                             value={formData.coverImage}
-                            onChange={(e) => {
-                                setFormData((prev) => ({ ...prev, coverImage: e.target.value }));
-                                setErrors((prev) => ({ ...prev, coverImage: "" }));
-                            }}
+                            onChange={(e) => handleInputChange("coverImage", e.target.value)}
                             className={errors.coverImage ? "border-red-500" : ""}
                         />
                         {errors.coverImage && (
-                            <p className="text-xs text-red-500">{errors.coverImage}</p>
+                            <p className="text-xs text-red-500 flex items-center gap-1">
+                                <X className="h-3 w-3" />
+                                {errors.coverImage}
+                            </p>
                         )}
                         {formData.coverImage && !errors.coverImage && (
-                            <div className="mt-2 rounded-lg overflow-hidden h-32">
+                            <div className="mt-2 rounded-lg overflow-hidden h-32 bg-[hsl(var(--muted))] relative">
+                                {!imageLoaded && !imageError && (
+                                    <div className="absolute inset-0 animate-shimmer" />
+                                )}
                                 <img
                                     src={formData.coverImage}
                                     alt="Preview"
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = "none";
-                                    }}
+                                    className={`w-full h-full object-cover transition-opacity ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+                                    onLoad={() => setImageLoaded(true)}
+                                    onError={() => setImageError(true)}
                                 />
+                                {imageError && (
+                                    <div className="absolute inset-0 flex items-center justify-center text-[hsl(var(--muted-foreground))]">
+                                        <ImageIcon className="h-8 w-8" />
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
 
                     {/* Content */}
                     <div className="space-y-2">
-                        <Label htmlFor="content">Content *</Label>
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="content">Content *</Label>
+                            <span className={`text-xs ${charCount.content < 50 ? "text-red-500" : "text-[hsl(var(--muted-foreground))]"}`}>
+                                {charCount.content} characters
+                            </span>
+                        </div>
                         <Textarea
                             id="content"
-                            placeholder="Write your blog content here..."
+                            placeholder="Write your blog content here. Use paragraphs to organize your thoughts..."
                             value={formData.content}
-                            onChange={(e) => {
-                                setFormData((prev) => ({ ...prev, content: e.target.value }));
-                                setErrors((prev) => ({ ...prev, content: "" }));
-                            }}
-                            className={`min-h-[200px] ${errors.content ? "border-red-500" : ""}`}
+                            onChange={(e) => handleInputChange("content", e.target.value)}
+                            className={`min-h-[180px] ${errors.content ? "border-red-500" : ""}`}
                         />
                         {errors.content && (
-                            <p className="text-xs text-red-500">{errors.content}</p>
+                            <p className="text-xs text-red-500 flex items-center gap-1">
+                                <X className="h-3 w-3" />
+                                {errors.content}
+                            </p>
                         )}
                     </div>
-
-                    {/* Error message */}
-                    {createBlog.isError && (
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                            <p className="text-sm text-red-500">
-                                Failed to create blog. Please try again.
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex justify-end gap-3 pt-4">
-                        <Button type="button" variant="outline" onClick={onClose}>
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={createBlog.isPending}>
-                            {createBlog.isPending ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                    Creating...
-                                </>
-                            ) : (
-                                <>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Create Blog
-                                </>
-                            )}
-                        </Button>
-                    </div>
                 </form>
+
+                {/* Footer */}
+                <div className="flex justify-end gap-3 p-6 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted))]/30">
+                    <Button type="button" variant="outline" onClick={onClose}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSubmit} disabled={createBlog.isPending}>
+                        {createBlog.isPending ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Creating...
+                            </>
+                        ) : (
+                            <>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Create Blog
+                            </>
+                        )}
+                    </Button>
+                </div>
             </div>
         </div>
     );

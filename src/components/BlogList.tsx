@@ -1,21 +1,26 @@
-import { useBlogs } from "@/hooks/useBlogs";
+import type { Blog } from "@/types/blog";
 import { BlogCard } from "@/components/BlogCard";
 import { BlogCardSkeleton } from "@/components/BlogSkeleton";
-import { AlertCircle, FileText } from "lucide-react";
+import { AlertCircle, FileText, SearchX } from "lucide-react";
+import { useBlogs } from "@/hooks/useBlogs";
 
 interface BlogListProps {
+    blogs: Blog[];
     selectedBlogId: string | null;
     onSelectBlog: (id: string) => void;
+    searchQuery?: string;
 }
 
-export function BlogList({ selectedBlogId, onSelectBlog }: BlogListProps) {
-    const { data: blogs, isLoading, isError, error } = useBlogs();
+export function BlogList({ blogs, selectedBlogId, onSelectBlog, searchQuery }: BlogListProps) {
+    const { isLoading, isError, error } = useBlogs();
 
     if (isLoading) {
         return (
-            <div className="space-y-4">
+            <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
-                    <BlogCardSkeleton key={i} />
+                    <div key={i} className={`animate-fade-in stagger-${i + 1}`}>
+                        <BlogCardSkeleton />
+                    </div>
                 ))}
             </div>
         );
@@ -23,7 +28,7 @@ export function BlogList({ selectedBlogId, onSelectBlog }: BlogListProps) {
 
     if (isError) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in">
                 <div className="rounded-full bg-red-500/10 p-4 mb-4">
                     <AlertCircle className="h-8 w-8 text-red-500" />
                 </div>
@@ -38,9 +43,26 @@ export function BlogList({ selectedBlogId, onSelectBlog }: BlogListProps) {
         );
     }
 
-    if (!blogs || blogs.length === 0) {
+    if (blogs.length === 0 && searchQuery) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in">
+                <div className="rounded-full bg-[hsl(var(--muted))] p-4 mb-4">
+                    <SearchX className="h-8 w-8 text-[hsl(var(--muted-foreground))]" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">No results found</h3>
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    No blogs match "{searchQuery}"
+                </p>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                    Try adjusting your search or filters
+                </p>
+            </div>
+        );
+    }
+
+    if (blogs.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in">
                 <div className="rounded-full bg-[hsl(var(--muted))] p-4 mb-4">
                     <FileText className="h-8 w-8 text-[hsl(var(--muted-foreground))]" />
                 </div>
@@ -53,14 +75,20 @@ export function BlogList({ selectedBlogId, onSelectBlog }: BlogListProps) {
     }
 
     return (
-        <div className="space-y-4">
-            {blogs.map((blog) => (
-                <BlogCard
+        <div className="space-y-3">
+            {blogs.map((blog, index) => (
+                <div
                     key={blog.id}
-                    blog={blog}
-                    isSelected={selectedBlogId === blog.id}
-                    onClick={() => onSelectBlog(blog.id)}
-                />
+                    className={`animate-fade-in`}
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                    <BlogCard
+                        blog={blog}
+                        isSelected={selectedBlogId === blog.id}
+                        onClick={() => onSelectBlog(blog.id)}
+                        searchQuery={searchQuery}
+                    />
+                </div>
             ))}
         </div>
     );
