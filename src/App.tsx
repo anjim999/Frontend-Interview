@@ -255,7 +255,7 @@ function App() {
       {/* Footer */}
       <footer className="border-t border-[hsl(var(--border))] mt-8 py-6">
         <div className="container mx-auto px-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
-          <p>Built with ❤️ using React, TypeScript, TanStack Query, Tailwind CSS & shadcn/ui</p>
+          {/* Credit line removed */}
           <p className="mt-1 text-xs">© 2026 CA Monk Blog. All rights reserved.</p>
         </div>
       </footer>
