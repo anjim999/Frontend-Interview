@@ -213,6 +213,7 @@ function App() {
               {selectedBlogId ? (
                 <div className="p-6 animate-fade-in">
                   <BlogDetail
+                    key={selectedBlogId}
                     blogId={selectedBlogId}
                     onDelete={() => setSelectedBlogId(null)}
                   />

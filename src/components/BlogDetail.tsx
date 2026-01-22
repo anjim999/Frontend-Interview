@@ -33,10 +33,6 @@ export function BlogDetail({ blogId, onDelete }: BlogDetailProps) {
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     // Reset image loaded state when blog changes
-    useEffect(() => {
-        setImageLoaded(false);
-    }, [blogId]);
-
     // Handle scroll to show/hide scroll-to-top button
     useEffect(() => {
         const container = document.getElementById("blog-detail-container");
@@ -63,7 +59,7 @@ export function BlogDetail({ blogId, onDelete }: BlogDetailProps) {
             toast.success("Blog deleted successfully");
             setIsDeleteOpen(false);
             if (onDelete) onDelete();
-        } catch (error) {
+        } catch {
             toast.error("Failed to delete blog");
         }
     };
